@@ -13,7 +13,7 @@ import io.newgrounds.objects.Score;
 import io.newgrounds.objects.ScoreBoard;
 import io.newgrounds.objects.events.Response;
 import io.newgrounds.objects.events.Result.GetCurrentVersionResult;
-import io.newgrounds.objects.events.Result.GetVersionResult;
+// import io.newgrounds.objects.events.Result.GetVersionResult;
 import lime.app.Application;
 import openfl.display.Stage;
 
