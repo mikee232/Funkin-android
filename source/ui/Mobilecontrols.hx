@@ -1,6 +1,8 @@
 package ui;
 
 // import options.CustomControlsState;
+import flixel.FlxBasic;
+import flixel.FlxCamera;
 import flixel.util.FlxSignal;
 import flixel.input.IFlxInputManager;
 import flixel.util.typeLimit.OneOfTwo;
@@ -34,7 +36,7 @@ class Mobilecontrols extends FlxSpriteGroup
 	{
 		super();
 
-		mode = Config.controlMode;
+		mode = FlxG.save.data.controlmode == null ? ControlsGroup.HITBOX : FlxG.save.data.controlmode;
 		trace(mode);
 
 		switch (mode)
@@ -87,6 +89,14 @@ class Mobilecontrols extends FlxSpriteGroup
 			FlxG.state.add(pad);
 
 		return pad;
+	}
+
+	public static function addPadCamera(vpad:FlxBasic) {
+		var cam = new FlxCamera();
+		cam.bgColor = 0;
+		FlxG.cameras.add(cam, false);
+		vpad.cameras = [cam];
+		return vpad;
 	}
 
 	public static function createVirtualPad(?DPad:FlxDPadMode, ?Action:FlxActionMode):Null<FlxVirtualPad> 
@@ -159,12 +169,12 @@ class ControlHandler
 	}
 
 	public function setVirtualPad() {
-		var up = Control.UP;
-		var down = Control.DOWN;
-		var left = Control.LEFT;
-		var right = Control.RIGHT;
-		var a = Control.ACCEPT;
-		var b = Control.BACK;
+		var upActions = [Control.UI_UP, Control.NOTE_UP];
+		var downActions = [Control.UI_DOWN, Control.NOTE_DOWN];
+		var leftActions = [Control.UI_LEFT, Control.NOTE_LEFT];
+		var rightActions = [Control.UI_RIGHT, Control.NOTE_RIGHT];
+		var aActions = [Control.ACCEPT];
+		var bActions = [Control.BACK];
 
 		for (button in virtualPad.members)
 		{
@@ -173,28 +183,34 @@ class ControlHandler
 			switch (name)
 			{
 				case 'up':
-					inline controls.forEachBound(up, (action, state) -> addbutton(action, cast button, state));
+					for (up in upActions)
+						inline controls.forEachBound(up, (action, state) -> addbutton(action, cast button, state));
 				case 'down':
-					inline controls.forEachBound(down, (action, state) -> addbutton(action, cast button, state));
+					for (down in downActions)
+						inline controls.forEachBound(down, (action, state) -> addbutton(action, cast button, state));
 				case 'left':
-					inline controls.forEachBound(left, (action, state) -> addbutton(action, cast button, state));
+					for (left in leftActions)
+						inline controls.forEachBound(left, (action, state) -> addbutton(action, cast button, state));
 				case 'right':
-					inline controls.forEachBound(right, (action, state) -> addbutton(action, cast button, state));
+					for (right in rightActions)
+						inline controls.forEachBound(right, (action, state) -> addbutton(action, cast button, state));
 
 				case 'a':
-					inline controls.forEachBound(a, (action, state) -> addbutton(action, cast button, state));
+						for (a in aActions)
+						inline controls.forEachBound(a, (action, state) -> addbutton(action, cast button, state));
 				case 'b':	
-					inline controls.forEachBound(b, (action, state) -> addbutton(action, cast button, state));
+					for (b in bActions)
+						inline controls.forEachBound(b, (action, state) -> addbutton(action, cast button, state));
 			}
 		}
 	}
 
 	public function setHitBox() 
 	{
-		var up = Control.UP;
-		var down = Control.DOWN;
-		var left = Control.LEFT;
-		var right = Control.RIGHT;
+		var up = Control.NOTE_UP;
+		var down = Control.NOTE_DOWN;
+		var left = Control.NOTE_LEFT;
+		var right = Control.NOTE_RIGHT;
 
 		inline controls.forEachBound(up, (action, state) -> addbutton(action, hitbox.buttonUp, state));
 		inline controls.forEachBound(down, (action, state) -> addbutton(action, hitbox.buttonDown, state));

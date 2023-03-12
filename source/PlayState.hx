@@ -1,5 +1,6 @@
 package;
 
+import ui.Mobilecontrols;
 import Section.SwagSection;
 import Song.SwagSong;
 import WiggleEffect.WiggleEffectType;
@@ -845,6 +846,15 @@ class PlayState extends MusicBeatState
 		iconP2 = new HealthIcon(SONG.player2, false);
 		iconP2.y = healthBar.y - (iconP2.height / 2);
 		add(iconP2);
+
+		if (Mobilecontrols.isEnabled)
+		{
+			// var mcontrols = new Mobilecontrols();
+			// var controlCamera = FlxG.cameras.add(new FlxCamera());
+			// controlCamera.bgColor = 0x00000000;
+			// mcontrols.cameras = [controlCamera];
+			// add(mcontrols);
+		}
 
 		grpNoteSplashes.cameras = [camHUD];
 		strumLineNotes.cameras = [camHUD];

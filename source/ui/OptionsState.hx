@@ -31,6 +31,9 @@ class OptionsState extends MusicBeatState
 		var options = addPage(Options, new OptionsMenu(false));
 		var preferences = addPage(Preferences, new PreferencesMenu());
 		var controls = addPage(Controls, new ControlsMenu());
+
+		options.onSwitch.add((pn) -> if (pn == MobileControls) FlxG.switchState(new ControlEditorState()));
+		var mobileControls = addPage(MobileControls, new Page());
 		// var colors = addPage(Colors, new ColorsMenu());
 
 		#if cpp
@@ -57,6 +60,10 @@ class OptionsState extends MusicBeatState
 
 		// disable for intro transition
 		currentPage.enabled = false;
+
+		if (ui.Mobilecontrols.isEnabled)
+			add(ui.Mobilecontrols.createVirtualPad(FULL, A_B));
+
 		super.create();
 	}
 
@@ -179,6 +186,8 @@ class OptionsMenu extends Page
 		add(items = new TextMenuList());
 		createItem('preferences', function() switchPage(Preferences));
 		createItem("controls", function() switchPage(Controls));
+		if (ui.Mobilecontrols.isEnabled)
+			createItem("mobile controls", function() switchPage(MobileControls));
 		// createItem('colors', function() switchPage(Colors));
 		#if cpp
 		createItem('mods', function() switchPage(Mods));
@@ -281,6 +290,7 @@ enum PageName
 {
 	Options;
 	Controls;
+	MobileControls;
 	Colors;
 	Mods;
 	Preferences;

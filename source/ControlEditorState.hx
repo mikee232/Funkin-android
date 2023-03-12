@@ -1,5 +1,7 @@
 package;
 
+import lime.system.Clipboard;
+import flixel.tweens.FlxTween;
 import ui.Hitbox;
 import ui.Mobilecontrols;
 import ui.FlxVirtualPad;
@@ -41,8 +43,8 @@ class ControlEditorState extends FlxState
 
 	var controlItems:Array<String> = ['hitbox', 'right control', 'left control', 'custom', 'keyboard'];
 	var curSelected:Int;
-	var virtualpad:FlxVirtualPad;
-	var hitbox:Hitbox;
+	public var virtualpad:FlxVirtualPad;
+	public var hitbox:Hitbox;
 	var variantChoicer:CoolVariantChoicer;
 	var deletebar:FlxSprite;
 
@@ -53,7 +55,7 @@ class ControlEditorState extends FlxState
 		FlxG.save.data.lastmousevisible = FlxG.mouse.visible;
 		FlxG.mouse.visible = true;
 		#end
-		curSelected = Config.controlMode;
+		curSelected = FlxG.save.data.controlmode == null ? ControlsGroup.HITBOX : FlxG.save.data.controlmode;
 
 		var bg:FlxSprite = new FlxSprite(-80).loadGraphic('assets/images/menuBG.png');
 		bg.scrollFactor.x = 0;
@@ -91,12 +93,14 @@ class ControlEditorState extends FlxState
 		exitSavebutton.setLabelFormat("VCR OSD Mono",24,FlxColor.BLACK,"center");
 		add(exitSavebutton);
 
-		var optionsbutton = new FlxUIButton(exitSavebutton.x + exitSavebutton.width + 50, 25, "options");
+		var optionsbutton = new FlxUIButton(exitSavebutton.x + exitSavebutton.width + 50, 25, "options", () -> {
+			openSubState(new EditorOptions(this));
+		});
 		optionsbutton.resize(125,50);
 		optionsbutton.setLabelFormat("VCR OSD Mono",24,FlxColor.BLACK,"center");
 		add(optionsbutton);
 
-		deletebar = new FlxSprite().loadGraphic('assets/android/delbar.png');
+		deletebar = new FlxSprite().loadGraphic(Paths.image('delbar'));
 		deletebar.y = FlxG.height - 77;
 		deletebar.alpha = 0;
 		add(deletebar);
@@ -111,13 +115,30 @@ class ControlEditorState extends FlxState
 		super.create();
 	}
 	function save() {
-		Config.controlMode = curSelected;
+		FlxG.save.data.controlmode = curSelected;
 		switch (curSelected)
 		{
 			case 3:
 				saveCustomPosition();
 
 			default:
+		}
+	}
+
+	public function createButton(type:String, x:Float, y:Float) {
+		var multiply = 3;
+
+		switch (type)
+		{
+			case "up":
+				virtualpad.dPad.add(virtualpad.add(virtualpad.createButton(x, y, 44 * multiply, 45 * multiply, "up")));
+			case "left":
+				virtualpad.dPad.add(virtualpad.add(virtualpad.createButton(x, y, 44 * multiply, 45 * multiply, "left")));
+			case "right":
+				virtualpad.dPad.add(virtualpad.add(virtualpad.createButton(x, y, 44 * multiply, 45 * multiply, "right")));
+			case "down":
+				virtualpad.dPad.add(virtualpad.add(virtualpad.createButton(x, y, 44 * multiply, 45 * multiply, "down")));
+
 		}
 	}
 
@@ -197,6 +218,11 @@ class ControlEditorState extends FlxState
 	var fpos:Vector<Int> = new Vector(2);
 	function saveCustomPosition() 
 	{
+		FlxG.save.data.padPositions = generateSave();
+		FlxG.save.flush();
+	}
+	
+	public function generateSave() {
 		var saveData:Array<SaveData> = [];
 
 		for (button in virtualpad.members)
@@ -215,17 +241,16 @@ class ControlEditorState extends FlxState
 			});
 		}
 
-		FlxG.save.data.padPositions = saveData;
-		FlxG.save.flush();
+		return saveData;
 	}
 
 	// for test
-	public static function loadCustomPosition(virtualpad:FlxVirtualPad) 
+	public static function loadCustomPosition(virtualpad:FlxVirtualPad, ?data:Array<SaveData>) 
 	{
 		if (FlxG.save.data.padPositions == null)
 			return virtualpad;
 
-		var data:Array<SaveData> = FlxG.save.data.padPositions;
+		var data:Array<SaveData> = data == null ? FlxG.save.data.padPositions : data;
 		trace(data);
 
 		for (button in virtualpad.members)
@@ -427,7 +452,7 @@ class ControlEditorState extends FlxState
 	{
 		FlxG.mouse.visible = FlxG.save.data.lastmousevisible;
 		FlxG.save.data.lastmousevisible = null;
-		FlxG.switchState(new OptionsMenu());
+		FlxG.switchState(new ui.OptionsState());
 	}
 }
 
@@ -492,15 +517,15 @@ class ButtonOptionSubState extends FlxUISubState
 	public function new() 
 	{
 		super();
-		bg = new FlxSprite().makeGraphic(150, 100, FlxColor.BLACK);
+		bg = new FlxSprite().makeGraphic(350, 225, FlxColor.BLACK);
 		bg.alpha = 0.75;
 		add(bg);
 		buttonName = new FlxText(5, 0, 0, 'button name');
 		buttonName.size = 16;
 		add(buttonName);
-		scaleSlider = new FlxUISlider(this, 'scale', 5, 10, 0.5, 3);
+		scaleSlider = new FlxUISlider(this, 'scale', 5, 10, 0.5, 3, 300, 45, 9, FlxColor.WHITE);
 		add(scaleSlider);
-		alphaSlider = new FlxUISlider(this, 'alphaButton', 5, 20, 0.1, 1);
+		alphaSlider = new FlxUISlider(this, 'alphaButton', 5, 20, 0.1, 1, 300, 45, 9, FlxColor.WHITE);
 		add(alphaSlider);
 	}
 
@@ -522,14 +547,30 @@ class ButtonOptionSubState extends FlxUISubState
 
 	function set_button(value:FlxButton):FlxButton 
 	{
+		var rightCornerDist = FlxG.width - (value.x + value.width);
+		var bottomCornerDist = FlxG.height - (value.y + value.height);
+		var xReflect = false;
+		var yReflect = false;
+
+		if (rightCornerDist < 350)
+			xReflect = true;
+
+		if (bottomCornerDist < 250)
+			yReflect = true;
+
+		var offset = FlxPoint.get(xReflect ? -350 : value.width, yReflect ? -250 : value.height);
+
+		buttonName.text = "Button: " + value.frames.frames[0].name;
 		button = value;
+		alphaButton = value.alpha;
 		scale = value.scale.x;
-		bg.setPosition(value.x, value.y);
-		buttonName.setPosition(value.x + 5, value.y);
-		scaleSlider.setPosition(value.x + 5, value.y + 20);
-		// setSliderScale(scaleSlider);
-		alphaSlider.setPosition(value.x + 5, value.y + 60);
-		// setSliderScale(alphaSlider);
+		bg.setPosition(value.x + offset.x, value.y + offset.y);
+		buttonName.setPosition(value.x + ( (350 - buttonName.width) / 2 ) + offset.x, value.y + offset.y + 5);
+		scaleSlider.setPosition(value.x + 15 + offset.x, value.y + 40 + offset.y);
+		alphaSlider.setPosition(value.x + 15 + offset.x, value.y + 130 + offset.y);
+
+		offset.put();
+
 		return value;
 	}
 
@@ -541,6 +582,128 @@ class ButtonOptionSubState extends FlxUISubState
 
 	function set_alphaButton(value:Float):Float {
 		return alphaButton = button.alpha = value;
+	}
+}
+
+class EditorOptions extends FlxUISubState {
+	public function new(state:ControlEditorState) 
+	{
+		super();
+
+		var bg = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
+		bg.alpha = 0;
+		add(bg);
+		FlxTween.num(0, 0.5, 0.125, {}, (v) -> {
+			bg.alpha = v;
+		});
+
+		var createButtonText = new FlxText(0, 125, 0, "create button", 64);
+		createButtonText.screenCenter(X);
+		add(createButtonText);
+
+		var createUpButton = new FlxUIButton(50, 300, "Create up Button", () -> 
+		{
+			state.createButton("up", 50, 300);
+			close();
+		});
+		createUpButton.resize(250,85);
+		createUpButton.setLabelFormat("VCR OSD Mono",24,FlxColor.BLACK,"center");
+		add(createUpButton);
+
+		var createDownButton = new FlxUIButton(350, 300, "Create down Button", () -> 
+		{
+			state.createButton("down", 350, 300);
+			close();
+		});
+		createDownButton.resize(250,85);
+		createDownButton.setLabelFormat("VCR OSD Mono",24,FlxColor.BLACK,"center");
+		add(createDownButton);
+
+		var createLeftButton = new FlxUIButton(650, 300, "Create left Button", () -> 
+		{
+			state.createButton("left", 650, 300);
+			close();
+		});
+		createLeftButton.resize(250,85);
+		createLeftButton.setLabelFormat("VCR OSD Mono",24,FlxColor.BLACK,"center");
+		add(createLeftButton);
+
+		var createRightButton = new FlxUIButton(950, 300, "Create right Button", () -> 
+		{
+			state.createButton("right", 950, 300);
+			close();
+		});
+		createRightButton.resize(250,85);
+		createRightButton.setLabelFormat("VCR OSD Mono",24,FlxColor.BLACK,"center");
+		add(createRightButton);
+
+		var exitButton = new FlxUIButton(1050, 50, "exit", () -> 
+		{
+			close();
+		});
+		exitButton.resize(150,85);
+		exitButton.setLabelFormat("VCR OSD Mono",24,FlxColor.BLACK,"center");
+		add(exitButton);
+
+		var exportSave = new FlxText(0, 425, 0, "export save", 48);
+		exportSave.screenCenter(X);
+		add(exportSave);
+
+		var saveButton = new FlxUIButton(150, 550, "save buttons in clipboard", () -> 
+		{
+			Clipboard.text = Json.stringify(state.generateSave());
+
+			// var saved = new FlxText()
+			// close();
+		});
+		saveButton.resize(450,50);
+		saveButton.setLabelFormat("VCR OSD Mono",24,FlxColor.BLACK,"center");
+		add(saveButton);
+
+		var loadSaveButton = new FlxUIButton(700, 550, "load save from clipboard", () -> 
+		{
+			try{
+				var data:Array<SaveData> = Json.parse(Clipboard.text);
+
+				if (!(data is Array))
+					throw 'invalid save data';
+
+				for (b in data){
+
+					var bFields = Reflect.fields(b);
+
+					if (bFields.contains('name') &&
+						bFields.contains('control') &&
+						bFields.contains('position') &&
+						bFields.contains('alpha') &&
+						bFields.contains('scale'))
+					{
+						continue;
+					}
+					else{
+						throw 'invalid save data';
+					}
+				}
+
+				state.virtualpad = ControlEditorState.loadCustomPosition(state.virtualpad, data);
+			}catch(e){
+				trace(e);
+			}
+
+			// var saved = new FlxText()
+			// close();
+		});
+		loadSaveButton.resize(450,50);
+		loadSaveButton.setLabelFormat("VCR OSD Mono",24,FlxColor.BLACK,"center");
+		add(loadSaveButton);
+
+		// var resetButton = new FlxUIButton(150, 550, "reset", () -> 
+		// {
+
+		// });
+		// resetButton.resize(450,50);
+		// resetButton.setLabelFormat("VCR OSD Mono",24,FlxColor.BLACK,"center");
+		// add(resetButton);
 	}
 }
 
@@ -568,42 +731,3 @@ typedef SaveData = {
 	var alpha:Float;
 	var scale:Float;
 }
-
-		// var fields = Reflect.fields(virtualpad);
-
-		// for (button in data)
-		// {
-		// 	if (fields.contains(button.name)) // oh no
-		// 	{
-		// 		if (Reflect.field(virtualpad, button.name) != null)
-		// 			destroyAndRemove(Reflect.field(virtualpad, button.name)); // todo(maybe): destory and remove for all buttons, not only default
-
-		// 		var graphicName = button.name.replace('button', '').toLowerCase();
-
-		// 		var btn = virtualpad.createButton(button.position.x, button.position.y, button.position.width, button.position.height, graphicName);
-		// 		Reflect.setField(virtualpad, button.name, btn);
-
-		// 		if (graphicName.length == 1)
-		// 			virtualpad.actions.add(btn);
-		// 		else
-		// 			virtualpad.dPad.add(btn);
-
-		// 		virtualpad.add(btn);
-		// 	}
-		// 	else 
-		// 	{
-		// 		var graphicName = button.name.replace('button', '').toLowerCase();
-		// 		var btn = virtualpad.createButton(button.position.x, button.position.y, button.position.width, button.position.height, graphicName);
-
-		// 		if (graphicName.length == 1)
-		// 			virtualpad.actions.add(btn);
-		// 		else
-		// 			virtualpad.dPad.add(btn);
-
-		// 		virtualpad.add(btn);
-		// 	}
-		// 	trace(button.name);
-		// }
-		// trace(virtualpad.members);
-
-

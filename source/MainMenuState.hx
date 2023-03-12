@@ -1,5 +1,6 @@
 package;
 
+import ui.Mobilecontrols;
 import NGio;
 import flixel.FlxG;
 import flixel.FlxObject;
@@ -132,6 +133,9 @@ class MainMenuState extends MusicBeatState
 		versionShit.text += '(Newgrounds exclusive preview)';
 
 		// NG.core.calls.event.logEvent('swag').send();
+
+		if (Mobilecontrols.isEnabled)
+			add(Mobilecontrols.createVirtualPad(UP_DOWN, A_B));
 
 		super.create();
 	}

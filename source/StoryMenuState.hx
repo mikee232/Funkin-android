@@ -222,6 +222,9 @@ class StoryMenuState extends MusicBeatState
 
 		trace("Line 165");
 
+		if (ui.Mobilecontrols.isEnabled)
+			add(ui.Mobilecontrols.createVirtualPad(FULL, A_B));
+
 		super.create();
 	}
 

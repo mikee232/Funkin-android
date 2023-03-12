@@ -97,6 +97,9 @@ class PauseSubState extends MusicBeatSubstate
 
 		regenMenu();
 
+		if (ui.Mobilecontrols.isEnabled)
+			add(ui.Mobilecontrols.createVirtualPad(UP_DOWN, A));
+
 		// cameras = [FlxG.cameras.list[FlxG.cameras.list.length - 1]];
 	}
 
