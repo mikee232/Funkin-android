@@ -849,11 +849,9 @@ class PlayState extends MusicBeatState
 
 		if (Mobilecontrols.isEnabled)
 		{
-			// var mcontrols = new Mobilecontrols();
-			// var controlCamera = FlxG.cameras.add(new FlxCamera());
-			// controlCamera.bgColor = 0x00000000;
-			// mcontrols.cameras = [controlCamera];
-			// add(mcontrols);
+			var mcontrols = new Mobilecontrols();
+			Mobilecontrols.addPadCamera(mcontrols);
+			add(mcontrols);
 		}
 
 		grpNoteSplashes.cameras = [camHUD];
